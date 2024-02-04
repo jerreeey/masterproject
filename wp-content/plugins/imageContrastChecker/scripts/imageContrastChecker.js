@@ -31,7 +31,7 @@ function createCanvasFromImage(image, width, height) {
   });
 }
 
-function createOverlayCanvas(overlayText, width, height, position) {
+function createTextOverlayCanvas(overlayText, width, height, position) {
   const font = window
     .getComputedStyle(overlayText, null)
     .getPropertyValue("font-family");
@@ -66,6 +66,19 @@ function createOverlayCanvas(overlayText, width, height, position) {
   canvas.style.border = "1px solid green"; // Remove this later
   canvas.style.position = "relative"; //Remove this later
   //document.body.appendChild(canvas)
+  return ctx.getImageData(0, 0, width, height);
+}
+
+function createBackgroundOverlayCanvas (overlay, width, height, position) {
+  let canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  let ctx = canvas.getContext("2d");
+  ctx.fillStyle = window.getComputedStyle(overlay, null).getPropertyValue("background-color");
+  ctx.fillRect(position.left, position.top, overlay.getBoundingClientRect().width, overlay.getBoundingClientRect().height);
+  canvas.style.border = "1px solid green"; // Remove this later
+  canvas.style.position = "relative"; //Remove this later
+  document.body.appendChild(canvas)
   return ctx.getImageData(0, 0, width, height);
 }
 
@@ -245,7 +258,8 @@ function calculateLuminance(r, g, b) {
 
 export {
   createCanvasFromImage,
-  createOverlayCanvas,
+  createTextOverlayCanvas,
+  createBackgroundOverlayCanvas,
   calculateContrast,
   isLargeText,
 };
