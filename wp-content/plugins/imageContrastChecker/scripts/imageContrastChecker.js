@@ -1,7 +1,7 @@
 import { drawImage } from "../node_modules/canvas-object-fit/src/index.js";
 import { drawText } from "../node_modules/canvas-txt/dist/canvas-txt.mjs";
 
-function createCanvasFromImage(image, width, height) {
+function createCanvasFromImage(image, width, height, imageOverlay) {
   return new Promise((resolve, reject) => {
     let img = new Image();
     let canvas = document.createElement("canvas");
@@ -22,12 +22,21 @@ function createCanvasFromImage(image, width, height) {
         offsetX: offsetX,
         offsetY: offsetY,
       });
+      const rgbValuesImageOverlay = window
+        .getComputedStyle(imageOverlay, null)
+        .getPropertyValue("background-color")
+        .match(/\d+/g);
+      const opacityImageOverlay = window
+        .getComputedStyle(imageOverlay, null)
+        .getPropertyValue("opacity");
+      ctx.fillStyle = `rgba(${rgbValuesImageOverlay[0]}, ${rgbValuesImageOverlay[1]}, ${rgbValuesImageOverlay[2]}, ${opacityImageOverlay})`;
+      ctx.fillRect(0, 0, width, height);
       resolve(ctx.getImageData(0, 0, width, height));
     };
     img.onerror = reject;
     canvas.style.border = "1px solid green"; // Remove this later
     canvas.style.position = "relative"; //Remove this later
-    // document.body.appendChild(canvas) //Remove this later
+    document.body.appendChild(canvas); //Remove this later
   });
 }
 
@@ -65,20 +74,27 @@ function createTextOverlayCanvas(overlayText, width, height, position) {
   });
   canvas.style.border = "1px solid green"; // Remove this later
   canvas.style.position = "relative"; //Remove this later
-  //document.body.appendChild(canvas)
+  document.body.appendChild(canvas);
   return ctx.getImageData(0, 0, width, height);
 }
 
-function createBackgroundOverlayCanvas (overlay, width, height, position) {
+function createBackgroundOverlayCanvas(overlay, width, height, position) {
   let canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   let ctx = canvas.getContext("2d");
-  ctx.fillStyle = window.getComputedStyle(overlay, null).getPropertyValue("background-color");
-  ctx.fillRect(position.left, position.top, overlay.getBoundingClientRect().width, overlay.getBoundingClientRect().height);
+  ctx.fillStyle = window
+    .getComputedStyle(overlay, null)
+    .getPropertyValue("background-color");
+  ctx.fillRect(
+    position.left,
+    position.top,
+    overlay.getBoundingClientRect().width,
+    overlay.getBoundingClientRect().height
+  );
   canvas.style.border = "1px solid green"; // Remove this later
   canvas.style.position = "relative"; //Remove this later
-  document.body.appendChild(canvas)
+  document.body.appendChild(canvas);
   return ctx.getImageData(0, 0, width, height);
 }
 
@@ -112,7 +128,12 @@ function isLargeText(overlayText) {
   }
 }
 
-function calculateContrast(imageData, overlayImageData, isLargeText, textColor) {
+function calculateContrast(
+  imageData,
+  overlayImageData,
+  isLargeText,
+  textColor
+) {
   let counter7 = 0;
   let counter45 = 0;
   let counter3 = 0;
@@ -155,8 +176,6 @@ function calculateContrast(imageData, overlayImageData, isLargeText, textColor) 
                 imageData.data[j + 3] === 0
               )
             ) {
-              console.log("overlayImageData.data[i]", overlayImageData.data[i], overlayImageData.data[i+1], overlayImageData.data[i+2], overlayImageData.data[i+3]);
-              console.log("imageData.data[j]", imageData.data[j], imageData.data[j+1], imageData.data[j+2]);
               // Calculate the contrast ratio
 
               //Cant use the overlayImageData to calculate the luminance, because it contains subpixel antialiasing
@@ -166,7 +185,11 @@ function calculateContrast(imageData, overlayImageData, isLargeText, textColor) 
               //   overlayImageData.data[i + 2]
               // );
 
-              let overlayLuminance = calculateLuminance(textColor[0], textColor[1], textColor[2]);
+              let overlayLuminance = calculateLuminance(
+                textColor[0],
+                textColor[1],
+                textColor[2]
+              );
 
               let imageLuminance = calculateLuminance(
                 imageData.data[j],
@@ -177,10 +200,9 @@ function calculateContrast(imageData, overlayImageData, isLargeText, textColor) 
                 overlayLuminance > imageLuminance
                   ? (overlayLuminance + 0.05) / (imageLuminance + 0.05)
                   : (imageLuminance + 0.05) / (overlayLuminance + 0.05);
-                  console.log("jaaaa"+contrastRatio, overlayLuminance, imageLuminance);
+
               if (contrastRatio < minContrastRatio) {
                 minContrastRatio = contrastRatio;
-
               }
 
               if (contrastRatio < 3) {
@@ -196,7 +218,6 @@ function calculateContrast(imageData, overlayImageData, isLargeText, textColor) 
       }
     }
   }
-  console.log(counter3, counter45, counter7, minContrastRatio);
 
   if (!isLargeText) {
     if (counter3 > 0 || counter45 > 0) {
@@ -248,12 +269,12 @@ function calculateContrast(imageData, overlayImageData, isLargeText, textColor) 
 }
 
 function calculateLuminance(r, g, b) {
-    const a = [r, g, b].map((v) => {
-        v /= 255;
-        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-    });
+  const a = [r, g, b].map((v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
 
-    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+  return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
 }
 
 export {
