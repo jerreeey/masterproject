@@ -1,5 +1,5 @@
-import { drawImage } from "../node_modules/canvas-object-fit/src/index.js";
-import { drawText } from "../node_modules/canvas-txt/dist/canvas-txt.mjs";
+import { drawImage } from "canvas-object-fit";
+import { drawText } from "canvas-txt";
 
 function createCanvasFromImage(image, width, height, imageOverlay) {
   return new Promise((resolve, reject) => {

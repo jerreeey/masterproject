@@ -58,7 +58,7 @@ services:
       WORDPRESS_DB_USER: '${MYSQL_USER}'
       WORDPRESS_DB_PASSWORD: '${MYSQL_PASSWORD}'
     volumes:
-      - ./wp-content:/var/www/html/wp-content
+      - ./imageContrastChecker:/var/www/html/wp-content/plugins/imageContrastChecker
     networks:
       - wordpress-network
 

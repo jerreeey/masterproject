@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "canvas-object-fit": "^0.8.1",
+    "canvas-txt": "^4.1.1"
+  },
+  "scripts": {
+    "build": "vite build",
+    "watch": "vite build --watch"
+  },
+  "devDependencies": {
+    "vite": "^5.0.12"
+  }
+}

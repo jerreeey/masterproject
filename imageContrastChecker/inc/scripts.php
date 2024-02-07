@@ -3,7 +3,7 @@
 function icc_load_scripts() {
     $currentScreen = get_current_screen();
     if($currentScreen->base === "post") {
-        wp_enqueue_script( 'contrastChecker', EA_URL . '/scripts/main.js', ['wp-i18n', 'wp-blocks', 'wp-dom-ready', 'wp-edit-post' ], '1.0.4', array( 'strategy' => 'defer'));
+        wp_enqueue_script( 'contrastChecker', EA_URL . '/dist/main.js', ['wp-i18n', 'wp-blocks', 'wp-dom-ready', 'wp-edit-post' ], '1.0.4', array( 'strategy' => 'defer'));
     }
 }
 
