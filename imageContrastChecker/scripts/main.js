@@ -19,7 +19,7 @@ const MyPlugin = function () {
   );
 };
 registerPlugin("my-plugin", { render: MyPlugin });
-console.log("Jsdsdssassss")
+
 wp.domReady(function () {
   test();
 });

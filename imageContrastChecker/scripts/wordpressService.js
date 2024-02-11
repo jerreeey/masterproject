@@ -6,9 +6,13 @@ import {
   calculateContrast,
   isLargeText,
 } from "./imageContrastChecker.js";
+import { optimizeContrast } from "./contrastOptimizer.js";
 
 function createBlockNotice(blockClientId, result) {
-  const noticeId = `low-contrast-warning-${blockClientId}`;
+  const noticeId =
+    result.compliance == "AA"
+      ? `low-contrast-AA-${blockClientId}`
+      : `low-contrast-AAA-${blockClientId}`;
   let message = "";
   if (result.compliance === "AA") {
     if (result.size === "large") {
@@ -42,6 +46,14 @@ function createBlockNotice(blockClientId, result) {
         {
           url: `#block-${blockClientId}`,
           label: "Go to Block",
+        },
+        {
+          label: "Automatically optimize contrast",
+          onClick: () => {
+            optimizeContrast(
+              wp.data.select("core/block-editor").getBlock(blockClientId)
+            );
+          },
         },
       ],
     }
@@ -85,7 +97,7 @@ function createWarningNotice(compliance) {
 }
 
 async function checkBlocks() {
-  const blocks = wp.data.select("core/editor").getBlocks();
+  const blocks = wp.data.select("core/block-editor").getBlocks();
   const notices = wp.data.select("core/notices").getNotices();
   let fail = false;
   let leastCompliance = "";
@@ -118,9 +130,16 @@ async function checkBlocks() {
   }
 }
 
+async function isContrastSufficient(block) {
+  const result = await checkBlock(
+    document.querySelector(`[data-block="${block.clientId}"]`)
+  );
+
+  return !result.fail;
+}
+
 async function checkBlock(blockElement) {
   //Erstelle Canvas aus Bild
-  const blockElementBoundingRect = blockElement.getBoundingClientRect();
   const img = blockElement.querySelector("img");
   const imageOverlay = blockElement.querySelector(
     ".wp-block-cover__background"
@@ -129,7 +148,11 @@ async function checkBlock(blockElement) {
     ".wp-block-cover__inner-container"
   );
   let contrastResults = [];
-
+  console.log(
+    window
+      .getComputedStyle(imageOverlay, null)
+      .getPropertyValue("background-color")
+  );
   try {
     const imgData = await createCanvasFromImage(
       img,
@@ -145,7 +168,7 @@ async function checkBlock(blockElement) {
           imgData,
           img.width,
           img.height,
-          blockElementBoundingRect
+          blockElement
         );
         contrastResults.push(contrastResult);
       }
@@ -165,7 +188,7 @@ function checkOverlayElement(
   imgData,
   imgWidth,
   imgHeight,
-  blockElementBoundingRect
+  blockElement
 ) {
   let contrastResults = [];
 
@@ -201,7 +224,7 @@ function checkOverlayElement(
       imgData,
       imgWidth,
       imgHeight,
-      blockElementBoundingRect
+      blockElement
     );
     contrastResults.push(contrastResult);
   } else if (immediateTextContent !== "") {
@@ -212,7 +235,7 @@ function checkOverlayElement(
       imgData,
       imgWidth,
       imgHeight,
-      blockElementBoundingRect
+      blockElement
     );
     contrastResults.push(contrastResult);
   } else {
@@ -224,7 +247,7 @@ function checkOverlayElement(
           imgData,
           imgWidth,
           imgHeight,
-          blockElementBoundingRect
+          blockElement
         );
         contrastResults = contrastResults.concat(childContrastResults);
       });
@@ -244,11 +267,12 @@ function checkOverlaySubElement(
   imgData,
   imgWidth,
   imgHeight,
-  blockElementBoundingRect
+  blockElement
 ) {
   //Erstelle Canvas aus Element (Hintergrund oder Text wenn kein Hintergrund vorhanden)
   const overlaySubElementBoundingRect =
     overlaySubElement.getBoundingClientRect();
+  const blockElementBoundingRect = blockElement.getBoundingClientRect();
   const position = {
     top: overlaySubElementBoundingRect.top - blockElementBoundingRect.top,
     left: overlaySubElementBoundingRect.left - blockElementBoundingRect.left,
@@ -280,4 +304,30 @@ function checkOverlaySubElement(
   return result;
 }
 
-export { checkBlocks };
+function dismissNotice(blockClientId) {
+  console.log(blockClientId);
+  const allNotices = wp.data.select("core/notices").getNotices();
+  let noticeId;
+  let newLeastCompliance = "";
+  allNotices.forEach((element) => {
+    if (element.id.includes(blockClientId)) {
+      noticeId = element.id;
+    } else if (
+      (newLeastCompliance === "" && element.id.includes("AA")) ||
+      (newLeastCompliance === "" && element.id.includes("AAA")) ||
+      (newLeastCompliance === "AAA" && element.id.includes("AA"))
+    ) {
+      newLeastCompliance = element.id.includes("AA") ? "AA" : "AAA";
+    }
+  });
+
+  wp.data.dispatch("core/notices").removeNotice(noticeId);
+  wp.data.dispatch("core/notices").removeNotice("low-contrast-warning");
+  if (newLeastCompliance === "") {
+    createSuccessNotice();
+  } else {
+    createWarningNotice(newLeastCompliance);
+  }
+}
+
+export { checkBlocks, isContrastSufficient, dismissNotice };
