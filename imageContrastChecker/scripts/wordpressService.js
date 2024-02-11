@@ -45,7 +45,7 @@ function createBlockNotice(blockClientId, result) {
       actions: [
         {
           url: `#block-${blockClientId}`,
-          label: "Go to Block",
+          label: "Go to block",
         },
         {
           label: "Automatically optimize contrast",
