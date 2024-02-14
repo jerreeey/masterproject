@@ -10,6 +10,7 @@ function createCanvasFromImage(image, width, height, imageOverlay) {
     let ctx = canvas.getContext("2d");
     let offsetX,
       offsetY = 0.5;
+    //get the focus point of the image  
     if (image.style.objectPosition) {
       [offsetX, offsetY] = image.style.objectPosition
         .split(" ")
@@ -17,11 +18,13 @@ function createCanvasFromImage(image, width, height, imageOverlay) {
     }
     img.src = image.src;
     img.onload = function () {
+      //draw the image on the canvas so that it is cropped to the correct aspect ratio
       drawImage(ctx, img, 0, 0, width, height, {
         objecTFit: "cover",
         offsetX: offsetX,
         offsetY: offsetY,
       });
+      //draw the overlay on the image
       const rgbValuesImageOverlay = window
         .getComputedStyle(imageOverlay, null)
         .getPropertyValue("background-color")
@@ -31,16 +34,20 @@ function createCanvasFromImage(image, width, height, imageOverlay) {
         .getPropertyValue("opacity");
       ctx.fillStyle = `rgba(${rgbValuesImageOverlay[0]}, ${rgbValuesImageOverlay[1]}, ${rgbValuesImageOverlay[2]}, ${opacityImageOverlay})`;
       ctx.fillRect(0, 0, width, height);
+      //get image data to retrieve pixel values
       resolve(ctx.getImageData(0, 0, width, height));
     };
     img.onerror = reject;
-    canvas.style.border = "1px solid green"; // Remove this later
-    canvas.style.position = "relative"; //Remove this later
-    document.body.appendChild(canvas); //Remove this later
+
+    //display image on the page for debugging
+    /* canvas.style.border = "1px solid green"; 
+    canvas.style.position = "relative"; 
+    document.body.appendChild(canvas); */
   });
 }
 
 function createTextOverlayCanvas(overlayText, width, height, position) {
+  //get text properties from dom object
   const font = window
     .getComputedStyle(overlayText, null)
     .getPropertyValue("font-family");
@@ -62,6 +69,7 @@ function createTextOverlayCanvas(overlayText, width, height, position) {
   ctx.fillStyle = window
     .getComputedStyle(overlayText, null)
     .getPropertyValue("color");
+  //draw the text on the canvas with according properties
   drawText(ctx, overlayText.textContent, {
     x: position.left,
     y: position.top,
@@ -72,9 +80,11 @@ function createTextOverlayCanvas(overlayText, width, height, position) {
     align: align,
     lineHeight: parseInt(lineHeightValue),
   });
-  canvas.style.border = "1px solid green"; // Remove this later
-  canvas.style.position = "relative"; //Remove this later
-  document.body.appendChild(canvas);
+
+  //display canvas on the page for debugging
+  /* canvas.style.border = "1px solid green";
+  canvas.style.position = "relative";
+  document.body.appendChild(canvas); */
   return ctx.getImageData(0, 0, width, height);
 }
 
@@ -92,12 +102,15 @@ function createBackgroundOverlayCanvas(overlay, width, height, position) {
     overlay.getBoundingClientRect().width,
     overlay.getBoundingClientRect().height
   );
-  canvas.style.border = "1px solid green"; // Remove this later
-  canvas.style.position = "relative"; //Remove this later
-  document.body.appendChild(canvas);
+
+  //display canvas on the page for debugging
+  /* canvas.style.border = "1px solid green";
+  canvas.style.position = "relative";
+  document.body.appendChild(canvas); */
   return ctx.getImageData(0, 0, width, height);
 }
 
+//iterate over the 8 neighboring pixels of a pixel and check if they are within the bounds of the canvas. Save the coordinates and return them
 function getNeighbors(x, y, width, height) {
   let neighbors = [];
   for (let dy = -1; dy <= 1; dy++) {
@@ -112,6 +125,7 @@ function getNeighbors(x, y, width, height) {
   return neighbors;
 }
 
+//check if the text is considered large or small according to WCAG 2.2
 function isLargeText(overlayText) {
   const fontSize = window
     .getComputedStyle(overlayText, null)
@@ -219,6 +233,8 @@ function calculateContrast(
     }
   }
 
+  //return the result according to the WCAG 2.2 guidelines
+
   if (!isLargeText) {
     if (counter3 > 0 || counter45 > 0) {
       return {
@@ -268,6 +284,7 @@ function calculateContrast(
   }
 }
 
+//calculate the luminance of a color, formular can be found here: https://www.w3.org/WAI/GL/wiki/Contrast_ratio
 function calculateLuminance(r, g, b) {
   const a = [r, g, b].map((v) => {
     v /= 255;

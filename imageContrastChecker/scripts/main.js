@@ -1,13 +1,12 @@
 const { select, dispatch } = wp.data;
-import {
-  checkBlocks
-} from "./wordpressService.js";
+import { checkBlocks } from "./wordpressService.js";
 
 const { registerPlugin } = wp.plugins;
 const { PluginPostStatusInfo } = wp.editPost;
 const { Button } = wp.components;
 
-const MyPlugin = function () {
+//add checkContrastButton to the post sidebar and register it as a plugin
+const CheckContrastButton = function () {
   return wp.element.createElement(
     PluginPostStatusInfo,
     {},
@@ -18,14 +17,16 @@ const MyPlugin = function () {
     )
   );
 };
-registerPlugin("my-plugin", { render: MyPlugin });
+registerPlugin("image-contrast-checker", { render: CheckContrastButton });
 
 wp.domReady(function () {
-  test();
+  addSavingListener();
 });
-function test() {
-  const { isSavingPost } = wp.data.select("core/editor");
-  let checked = true; // Start in a checked state.
+
+//check contrast after manually saving or autosaving
+function addSavingListener() {
+  const { isSavingPost } = select("core/editor");
+  let checked = true;
   wp.data.subscribe(() => {
     if (isSavingPost()) {
       checked = false;

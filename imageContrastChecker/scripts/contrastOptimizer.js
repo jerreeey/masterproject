@@ -1,6 +1,7 @@
 import { isContrastSufficient, dismissNotice } from "./wordpressService.js";
 const { select, dispatch } = wp.data;
 
+//try to optimize the contrast of a block, by adjusting overlay, text size, text color or background color
 async function optimizeContrast(block) {
   const optimizationFunctions = [
     adjustOverlay,
@@ -38,6 +39,7 @@ async function adjustBackgroundColor(block) {
   const innerBlocks = select("core/block-editor").getBlocks(block.clientId);
   const colors = ["contrast", "base"];
 
+  // change background color of all inner blocks to black or white (if black doesnt fix contrast)
   for (const color of colors) {
     for (let i = 0; i < innerBlocks.length; i++) {
       await dispatch("core/block-editor").selectBlock(innerBlocks[i].clientId);
@@ -62,6 +64,7 @@ async function adjustBackgroundColor(block) {
 async function adjustTextSize(block) {
   const innerBlocks = select("core/block-editor").getBlocks(block.clientId);
 
+  //recursevely enhance text size of inner blocks to be categorized to other WCAG conformance level
   for (let i = 0; i < innerBlocks.length; i++) {
     if (innerBlocks[i].innerBlocks.length > 0) {
       adjustTextSize(innerBlocks[i]);
@@ -79,6 +82,7 @@ async function adjustTextSize(block) {
         .getPropertyValue("font-weight");
 
       if (fontSizeValue < 18.66 || (fontSizeValue < 24 && fontWeight < 700)) {
+        //Replace html tags with empty string because it can also contain inline styling for font size
         const content = innerBlocks[i].attributes.content.replace(
           /(<([^>]+)>)/gi,
           ""
@@ -106,6 +110,7 @@ async function adjustTextColor(block) {
   const innerBlocks = select("core/block-editor").getBlocks(block.clientId);
   const colors = ["contrast", "base"];
 
+  //try fixing contrast by changing text color to black or white
   for (let i = 0; i < innerBlocks.length; i++) {
     if (innerBlocks[i].innerBlocks.length > 0) {
       adjustTextColor(innerBlocks[i]);
@@ -132,6 +137,7 @@ async function adjustTextColor(block) {
   return isSufficient;
 }
 
+//add 4 different overlays to the image and check if the contrast is sufficient after each overlay
 async function adjustOverlay(block) {
   const newOverlaySettings = [
     {

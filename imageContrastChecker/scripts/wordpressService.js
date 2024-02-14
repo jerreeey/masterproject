@@ -8,6 +8,7 @@ import {
 } from "./imageContrastChecker.js";
 import { optimizeContrast } from "./contrastOptimizer.js";
 
+//creates a notice for a block that does not comply with WCAG
 function createBlockNotice(blockClientId, result) {
   const noticeId =
     result.compliance == "AA"
@@ -60,6 +61,7 @@ function createBlockNotice(blockClientId, result) {
   );
 }
 
+//creates a success notice if all blocks comply with WCAG
 function createSuccessNotice() {
   const noticeId = `low-contrast-success`;
 
@@ -73,6 +75,7 @@ function createSuccessNotice() {
   );
 }
 
+//creates a warning notice if some blocks do not comply with WCAG AA or AAA
 function createWarningNotice(compliance) {
   const noticeId = `low-contrast-warning`;
 
@@ -96,16 +99,17 @@ function createWarningNotice(compliance) {
   );
 }
 
+//iterates over all cover blocks and checks if the contrast is sufficient
 async function checkBlocks() {
   const blocks = wp.data.select("core/block-editor").getBlocks();
   const notices = wp.data.select("core/notices").getNotices();
   let fail = false;
   let leastCompliance = "";
-  //Lösche alle notices
+  //delete all notices from previous checks
   notices.forEach((notice) => {
     wp.data.dispatch("core/notices").removeNotice(notice.id);
   });
-  //Iteriere über alle Cover Blöcke mit Bildhintergrund
+  //iterate over all cover blocks and check if the contrast is sufficient
   await Promise.all(
     blocks.map(async (block) => {
       if (block.name === "core/cover" && block.attributes.id) {
@@ -121,15 +125,17 @@ async function checkBlocks() {
       }
     })
   );
-  //Gib Erfolgsmeldung/Warning aus basierend auf alle Blöcke
-
+  //create notice for the whole post
   if (!fail) {
     createSuccessNotice();
   } else {
     createWarningNotice(leastCompliance);
   }
+
+  return leastCompliance
 }
 
+//checks if the contrast of a block is sufficient
 async function isContrastSufficient(block) {
   const result = await checkBlock(
     document.querySelector(`[data-block="${block.clientId}"]`)
@@ -138,8 +144,8 @@ async function isContrastSufficient(block) {
   return !result.fail;
 }
 
+//checks the contrast of a cover block
 async function checkBlock(blockElement) {
-  //Erstelle Canvas aus Bild
   const img = blockElement.querySelector("img");
   const imageOverlay = blockElement.querySelector(
     ".wp-block-cover__background"
@@ -148,19 +154,15 @@ async function checkBlock(blockElement) {
     ".wp-block-cover__inner-container"
   );
   let contrastResults = [];
-  console.log(
-    window
-      .getComputedStyle(imageOverlay, null)
-      .getPropertyValue("background-color")
-  );
   try {
+    //create canvas from image
     const imgData = await createCanvasFromImage(
       img,
       img.width,
       img.height,
       imageOverlay
     );
-    //Iteriere über alle Elemente im Cover Block außer appender block
+    //iterate over all inner elements of the cover block except the block-list-appender and check the contrast
     Array.from(overlayContainer.children).forEach((overlayElement) => {
       if (!overlayElement.classList.contains("block-list-appender")) {
         let contrastResult = checkOverlayElement(
@@ -176,13 +178,14 @@ async function checkBlock(blockElement) {
   } catch (error) {
     console.log(error);
   }
-  //return Ergebnis für Element mit schlechtestem Kontrast als Ergebnis für den ganzen Block
+  //return result with the lowest contrast for the whole block
   return contrastResults.reduce(
     (min, result) => (result.contrast < min.contrast ? result : min),
     contrastResults[0]
   );
 }
 
+//checks the contrast of one inner element of a cover block
 function checkOverlayElement(
   overlayElement,
   imgData,
@@ -203,10 +206,10 @@ function checkOverlayElement(
     .replace(/[^\d,]/g, "")
     .split(",");
 
-  let immediateTextContent;
-
+    let immediateTextContent;
+    
+  //.textContent returns also the text of the children elements so we need to filter them out
   if (overlayElement.childNodes.length > 0) {
-    //nur Textinhalt ohne  Textinhalt der Kinder
     immediateTextContent = Array.from(overlayElement.childNodes)
       .filter((node) => node.nodeType === 3) // Filter out non-text nodes
       .map((node) => node.textContent)
@@ -215,7 +218,7 @@ function checkOverlayElement(
     immediateTextContent = overlayElement.textContent;
   }
 
-  //check ob Element Text oder Hintergrund hat
+  //checks if the element has a background color or text color, if not checks child elements
   if (backgroundColor[3] !== "0") {
     const contrastResult = checkOverlaySubElement(
       overlayElement,
@@ -239,7 +242,6 @@ function checkOverlayElement(
     );
     contrastResults.push(contrastResult);
   } else {
-    //check ob Element Kinder hat
     if (overlayElement.children) {
       Array.from(overlayElement.children).forEach((element) => {
         const childContrastResults = checkOverlayElement(
@@ -253,7 +255,7 @@ function checkOverlayElement(
       });
     }
   }
-  //return schlechtestes Ergebnis für Element
+  //return result with the lowest contrast for the whole element
   return contrastResults.reduce(
     (min, result) => (result.contrast < min.contrast ? result : min),
     contrastResults[0]
@@ -269,7 +271,7 @@ function checkOverlaySubElement(
   imgHeight,
   blockElement
 ) {
-  //Erstelle Canvas aus Element (Hintergrund oder Text wenn kein Hintergrund vorhanden)
+  //create overlay canvas, either with background or text and calculate contrast
   const overlaySubElementBoundingRect =
     overlaySubElement.getBoundingClientRect();
   const blockElementBoundingRect = blockElement.getBoundingClientRect();
@@ -278,12 +280,19 @@ function checkOverlaySubElement(
     left: overlaySubElementBoundingRect.left - blockElementBoundingRect.left,
   };
   let overlayData;
+  let result;
   if (hasBackground) {
     overlayData = createBackgroundOverlayCanvas(
       overlaySubElement,
       imgWidth,
       imgHeight,
       position
+    );
+    result = calculateContrast(
+      imgData,
+      overlayData,
+      true,
+      color
     );
   } else {
     overlayData = createTextOverlayCanvas(
@@ -292,15 +301,14 @@ function checkOverlaySubElement(
       imgHeight,
       position
     );
+    result = calculateContrast(
+      imgData,
+      overlayData,
+      isLargeText(overlaySubElement),
+      color
+    );
   }
-  //Berechne Kontrast
-  const result = calculateContrast(
-    imgData,
-    overlayData,
-    isLargeText(overlaySubElement),
-    color
-  );
-  //Gib Ergebnis zurück
+  //return result of subelement
   return result;
 }
 
