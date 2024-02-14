@@ -1,7 +1,7 @@
 <?php 
 /** 
  * Plugin Name: Image Contrast Checker
- * Description: This plugin checks the contrast of images and displays a warning if the contrast is too low.
+ * Description: This plugin checks the contrast of images and displays a warning, if the contrast is too low according to WCAG 2.2. In addition it is capable of adjusting the contrast automatically.
  * Version: 1.0
  * Author: Jeremias Rauwolf
 */

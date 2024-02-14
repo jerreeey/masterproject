@@ -106,35 +106,40 @@ async function adjustTextSize(block) {
   return isSufficient;
 }
 
+async function adjustTextColorForElement(block, innerBlocks, color) {
+  for (let i = 0; i < innerBlocks.length; i++) {
+    if (innerBlocks[i].innerBlocks && innerBlocks[i].innerBlocks.length > 0) {
+      await adjustTextColorForElement(block, innerBlocks[i].innerBlocks, color);
+    }
+    if (
+      innerBlocks[i].attributes.content ||
+      innerBlocks[i].attributes.citation
+    ) {
+      dispatch("core/block-editor").selectBlock(innerBlocks[i].clientId);
+      await dispatch("core/block-editor").updateBlockAttributes(
+        innerBlocks[i].clientId,
+        { textColor: color }
+      );
+    }
+  }
+}
+
 async function adjustTextColor(block) {
   const innerBlocks = select("core/block-editor").getBlocks(block.clientId);
   const colors = ["contrast", "base"];
-
   //try fixing contrast by changing text color to black or white
-  for (let i = 0; i < innerBlocks.length; i++) {
-    if (innerBlocks[i].innerBlocks.length > 0) {
-      adjustTextColor(innerBlocks[i]);
-    }
-    if (innerBlocks[i].attributes.content) {
-      dispatch("core/block-editor").selectBlock(innerBlocks[i].clientId);
-
-      for (const color of colors) {
-        await dispatch("core/block-editor").updateBlockAttributes(
-          innerBlocks[i].clientId,
-          { textColor: color }
-        );
-      }
+  for (const color of colors) {
+    await adjustTextColorForElement(block, innerBlocks, color);
+    const updatedBlock = select("core/block-editor").getBlock(block.clientId);
+    const isSufficient = await isContrastSufficient(updatedBlock);
+    if (isSufficient) {
+      return true;
     }
   }
 
-  const updatedBlock = select("core/block-editor").getBlock(block.clientId);
-  const isSufficient = await isContrastSufficient(updatedBlock);
+  await dispatch("core/block-editor").replaceBlock(block.clientId, block);
 
-  if (!isSufficient) {
-    await dispatch("core/block-editor").replaceBlock(block.clientId, block);
-  }
-
-  return isSufficient;
+  return false;
 }
 
 //add 4 different overlays to the image and check if the contrast is sufficient after each overlay
@@ -159,16 +164,22 @@ async function adjustOverlay(block) {
   ];
 
   for (let i = 0; i < newOverlaySettings.length; i++) {
-      dispatch("core/block-editor").selectBlock(block.clientId);
-      await dispatch("core/block-editor").updateBlockAttributes(block.clientId, newOverlaySettings[i]);
-      const updatedBlock = select("core/block-editor").getBlock(block.clientId);
-      const isSufficient = await isContrastSufficient(updatedBlock);
-      if (isSufficient) {
-        return true;
-      }
+    dispatch("core/block-editor").selectBlock(block.clientId);
+    await dispatch("core/block-editor").updateBlockAttributes(
+      block.clientId,
+      newOverlaySettings[i]
+    );
+    const updatedBlock = select("core/block-editor").getBlock(block.clientId);
+    const isSufficient = await isContrastSufficient(updatedBlock);
+    if (isSufficient) {
+      return true;
+    }
   }
 
-  dispatch("core/block-editor").updateBlockAttributes(block.clientId, block.attributes);
+  dispatch("core/block-editor").updateBlockAttributes(
+    block.clientId,
+    block.attributes
+  );
   return false;
 }
 

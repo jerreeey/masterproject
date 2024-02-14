@@ -313,7 +313,6 @@ function checkOverlaySubElement(
 }
 
 function dismissNotice(blockClientId) {
-  console.log(blockClientId);
   const allNotices = wp.data.select("core/notices").getNotices();
   let noticeId;
   let newLeastCompliance = "";
