@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: Image Contrast Checker
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Jeremias
+    family-names: Rauwolf
+repository-code: 'https://github.com/jerreeey/masterproject'
+abstract: >-
+  This is a WordPress plugin to check contrasts between
+  image and text. Contrasts are checked according to the Web
+  Content Accessibility Guidelines Conformance Level 2.2. In
+  addition there is an option available to automatically
+  optimize the contrast via the plugin.
+keywords:
+  - Web Accessibilty
+  - Image Contrast Checker
+  - WordPress
+commit: 4cada73
+version: '1.0'
+date-released: '2024-02-16'
