@@ -6,7 +6,7 @@ function createCanvasFromImage(image, width, height, imageOverlay) {
     let img = new Image();
     let canvas = document.createElement("canvas");
     canvas.width = width;
-    canvas.height = height;
+    canvas.height = height; 
     let ctx = canvas.getContext("2d");
     let offsetX,
       offsetY = 0.5;
@@ -80,28 +80,6 @@ function createTextOverlayCanvas(overlayText, width, height, position) {
     align: align,
     lineHeight: parseInt(lineHeightValue),
   });
-
-  //display canvas on the page for debugging
-  /* canvas.style.border = "1px solid green";
-  canvas.style.position = "relative";
-  document.body.appendChild(canvas); */
-  return ctx.getImageData(0, 0, width, height);
-}
-
-function createBackgroundOverlayCanvas(overlay, width, height, position) {
-  let canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  let ctx = canvas.getContext("2d");
-  ctx.fillStyle = window
-    .getComputedStyle(overlay, null)
-    .getPropertyValue("background-color");
-  ctx.fillRect(
-    position.left,
-    position.top,
-    overlay.getBoundingClientRect().width,
-    overlay.getBoundingClientRect().height
-  );
 
   //display canvas on the page for debugging
   /* canvas.style.border = "1px solid green";
