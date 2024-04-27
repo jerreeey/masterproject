@@ -70,7 +70,8 @@ async function adjustTextSize(block) {
       adjustTextSize(innerBlocks[i]);
     }
     if (innerBlocks[i].attributes.content) {
-      const innerBlockElement = document.getElementById(
+      const documentNode = document.defaultView[0] ? document.defaultView[0].document : document;
+      const innerBlockElement = documentNode.getElementById(
         `block-${innerBlocks[i].clientId}`
       );
       const fontSize = window

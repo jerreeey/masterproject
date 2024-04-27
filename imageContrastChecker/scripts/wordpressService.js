@@ -2,7 +2,6 @@ const { select, dispatch } = wp.data;
 import {
   createCanvasFromImage,
   createTextOverlayCanvas,
-  createBackgroundOverlayCanvas,
   calculateContrast,
   isLargeText,
 } from "./imageContrastChecker.js";
@@ -113,7 +112,8 @@ async function checkBlocks() {
   await Promise.all(
     blocks.map(async (block) => {
       if (block.name === "core/cover" && block.attributes.id) {
-        const blockElement = document.querySelector(
+        const documentNode = document.defaultView[0] ? document.defaultView[0].document : document; // This is needed for support of WP 6.3 and newer
+        const blockElement = documentNode.querySelector(
           `[data-block="${block.clientId}"]`
         );
         const result = await checkBlock(blockElement);
@@ -137,8 +137,9 @@ async function checkBlocks() {
 
 //checks if the contrast of a block is sufficient
 async function isContrastSufficient(block) {
+  const documentNode = document.defaultView[0] ? document.defaultView[0].document : document;
   const result = await checkBlock(
-    document.querySelector(`[data-block="${block.clientId}"]`)
+    documentNode.querySelector(`[data-block="${block.clientId}"]`)
   );
 
   return !result.fail;

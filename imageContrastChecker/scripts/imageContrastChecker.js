@@ -275,7 +275,7 @@ function calculateLuminance(r, g, b) {
 export {
   createCanvasFromImage,
   createTextOverlayCanvas,
-  createBackgroundOverlayCanvas,
   calculateContrast,
   isLargeText,
+  calculateLuminance
 };
