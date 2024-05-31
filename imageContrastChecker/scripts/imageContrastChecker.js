@@ -263,13 +263,14 @@ function calculateContrast(
 }
 
 //calculate the luminance of a color, formular can be found here: https://www.w3.org/WAI/GL/wiki/Contrast_ratio
-function calculateLuminance(r, g, b) {
-  const a = [r, g, b].map((v) => {
-    v /= 255;
-    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-  });
+function calculateLuminance(R8bit, G8bit, B8bit) {
+  const RGB = [R8bit, G8bit, B8bit].map((x) => {
+    const sRGB = x / 255
+    return sRGB <= 0.03928 ? sRGB / 12.92 : ((sRGB + 0.055) / 1.055) ** 2.4
+  })
 
-  return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
+  const relLuminance = RGB[0] * 0.2126 + RGB[1] * 0.7152 + RGB[2] * 0.0722
+  return relLuminance
 }
 
 export {
